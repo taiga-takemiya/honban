@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>3D Map Launcher</title>
+    <meta name="description" content="街を歩いてアプリを開く、3Dマップ型ホームランチャー" />
+    <meta name="theme-color" content="#0f1424" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="touch-layer">
+      <div id="stick-base"><div id="stick-knob"></div></div>
+    </div>
+
+    <div id="hud">
+      <div class="hud-top">
+        <div class="clock">
+          <strong id="clock-time">--:--</strong>
+          <small id="clock-date"></small>
+        </div>
+        <div class="place-chip" id="place-chip">中央広場</div>
+      </div>
+
+      <div class="nav-banner hidden" id="nav-banner">
+        <span class="nav-emoji" id="nav-emoji">📍</span>
+        <div class="nav-text">
+          <strong id="nav-name">目的地</strong>
+          <small id="nav-dist">あと 0 m</small>
+        </div>
+        <div class="nav-arrow" id="nav-arrow"></div>
+        <button type="button" class="nav-cancel" id="nav-cancel" aria-label="案内をやめる">✕</button>
+      </div>
+
+      <canvas id="minimap" width="260" height="260" aria-label="ミニマップ"></canvas>
+
+      <div class="nearby-card hidden" id="nearby-card">
+        <div class="nearby-emoji" id="nearby-emoji">📱</div>
+        <div class="nearby-text">
+          <strong id="nearby-name">アプリ</strong>
+          <small id="nearby-sub">近くにあります</small>
+        </div>
+        <button type="button" class="open-btn" id="nearby-open">開く</button>
+      </div>
+
+      <div class="hud-bottom">
+        <button type="button" class="hud-btn" id="btn-home">🏠<span>広場へ</span></button>
+        <button type="button" class="hud-btn primary" id="btn-search">🔍<span>さがす</span></button>
+        <button type="button" class="hud-btn" id="btn-settings">⚙️<span>設定</span></button>
+      </div>
+    </div>
+
+    <section class="panel hidden" id="panel-list" aria-hidden="true">
+      <div class="panel-head">
+        <input type="search" id="app-search" placeholder="アプリ名でさがす" autocomplete="off" />
+        <button type="button" class="ghost" id="panel-close">閉じる</button>
+      </div>
+      <p class="panel-hint">タップすると、その建物までの道を案内します。</p>
+      <div class="app-grid" id="app-grid"></div>
+      <div class="panel-foot">
+        <button type="button" class="ghost" id="btn-add">＋ アプリを追加</button>
+        <button type="button" class="ghost" id="btn-edit-mode">✏️ 編集</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="panel-settings" aria-hidden="true">
+      <div class="panel-head">
+        <strong>設定</strong>
+        <button type="button" class="ghost" id="settings-close">閉じる</button>
+      </div>
+      <div class="settings-body">
+        <label class="row">
+          <span>時間帯の見た目</span>
+          <select id="time-mode">
+            <option value="auto">実時間に合わせる</option>
+            <option value="morning">朝</option>
+            <option value="day">昼</option>
+            <option value="evening">夕方</option>
+            <option value="night">夜</option>
+          </select>
+        </label>
+        <label class="row">
+          <span>近づいたら自動で開く</span>
+          <input type="checkbox" id="auto-open" />
+        </label>
+        <label class="row">
+          <span>描画品質</span>
+          <select id="quality">
+            <option value="high">きれい</option>
+            <option value="balanced">ふつう</option>
+            <option value="low">軽量</option>
+          </select>
+        </label>
+        <div class="row stack">
+          <span>アプリ設定のバックアップ</span>
+          <div class="btn-row">
+            <button type="button" class="ghost" id="btn-export">書き出す</button>
+            <button type="button" class="ghost" id="btn-import">読み込む</button>
+            <button type="button" class="ghost danger" id="btn-reset">初期状態に戻す</button>
+          </div>
+          <textarea id="io-area" rows="4" placeholder="ここに JSON が表示されます／貼り付けて「読み込む」"></textarea>
+        </div>
+        <p class="panel-hint">
+          ホーム画面に追加すると全画面で起動します。アプリを開く動作は端末にインストール済みのアプリと
+          URL スキームに依存します（開けない場合は Web 版が開きます）。
+        </p>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="panel-edit" aria-hidden="true">
+      <div class="panel-head">
+        <strong id="edit-title">アプリを編集</strong>
+        <button type="button" class="ghost" id="edit-close">閉じる</button>
+      </div>
+      <form class="edit-form" id="edit-form">
+        <label>名前<input type="text" id="f-name" required maxlength="20" /></label>
+        <div class="two">
+          <label>アイコン（絵文字）<input type="text" id="f-emoji" maxlength="4" /></label>
+          <label>色<input type="color" id="f-color" /></label>
+        </div>
+        <label>街区
+          <select id="f-district"></select>
+        </label>
+        <label>アプリのURLスキーム<input type="text" id="f-scheme" placeholder="line:// など" autocapitalize="off" spellcheck="false" /></label>
+        <label>Web版のURL（開けなかった時用）<input type="url" id="f-web" placeholder="https://..." autocapitalize="off" spellcheck="false" /></label>
+        <label>建物の高さ <span class="range-value" id="f-height-value">12</span>
+          <input type="range" id="f-height" min="7" max="26" step="1" />
+        </label>
+        <div class="btn-row">
+          <button type="submit" class="open-btn">保存</button>
+          <button type="button" class="ghost danger" id="btn-delete">削除</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <div id="boot">
+      <div class="boot-inner">
+        <div class="boot-mark">🗺️</div>
+        <p>街をつくっています…</p>
+      </div>
+    </div>
+
+    <div id="fallback" class="hidden">
+      <div>
+        <h1>3D表示に対応していません</h1>
+        <p>お使いのブラウザで WebGL が利用できないため、マップを表示できません。<br />別のブラウザでお試しください。</p>
+        <div class="app-grid" id="fallback-grid"></div>
+      </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

@@ -12,8 +12,8 @@ export function createControls({ layer, stickBase, stickKnob, onTap }) {
   const state = {
     move: { x: 0, y: 0 },
     yaw: Math.PI,
-    pitch: 0.58,
-    distance: 33,
+    pitch: 0.55,
+    distance: 28,
     stickActive: false,
     lookActive: false,
     keys: new Set(),

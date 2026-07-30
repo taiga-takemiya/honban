@@ -1,5 +1,5 @@
 /* オフラインでも起動できるようにアプリシェルをキャッシュする */
-const CACHE = 'map-launcher-v1';
+const CACHE = 'map-launcher-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -12,8 +12,7 @@ const ASSETS = [
   './src/apps.js',
   './src/ui.js',
   './src/sky.js',
-  './vendor/three.module.js',
-  './vendor/three.core.min.js',
+  './src/gl.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];

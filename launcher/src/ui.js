@@ -168,7 +168,7 @@ export function createUI(handlers) {
     el.fDistrict.value = app?.district ?? DISTRICTS[0].id;
     el.fScheme.value = app?.scheme ?? '';
     el.fWeb.value = app?.web ?? '';
-    el.fHeight.value = String(app?.height ?? 12);
+    el.fHeight.value = String(app?.height ?? 10);
     el.fHeightValue.textContent = el.fHeight.value;
     el.btnDelete.classList.toggle('hidden', !app);
     openPanel(el.panelEdit);
@@ -279,7 +279,7 @@ export function createUI(handlers) {
   el.btnAdd.addEventListener('click', () => showEditor(null));
   el.btnEditMode.addEventListener('click', () => {
     editing = !editing;
-    el.btnEditMode.textContent = editing ? '✅ 完了' : '✏️ 編集';
+    el.btnEditMode.textContent = editing ? '完了' : '編集';
     renderList(el.appSearch.value);
     if (editing) toast('編集したいアプリをタップしてください');
   });
@@ -293,7 +293,7 @@ export function createUI(handlers) {
     const mm = String(date.getMinutes()).padStart(2, '0');
     el.clockTime.textContent = `${hh}:${mm}`;
     el.clockDate.textContent = date.toLocaleDateString('ja-JP', {
-      month: 'long',
+      month: 'numeric',
       day: 'numeric',
       weekday: 'short',
     });
@@ -354,74 +354,58 @@ export function createUI(handlers) {
     mctx.beginPath();
     mctx.arc(MAP_R, MAP_R, MAP_R - 2, 0, Math.PI * 2);
     mctx.clip();
-    mctx.fillStyle = 'rgba(12,18,32,0.72)';
+    mctx.fillStyle = 'rgba(255,255,255,0.9)';
     mctx.fillRect(0, 0, map.width, map.height);
 
     mctx.translate(MAP_R, MAP_R);
     mctx.rotate(theta);
 
-    // 陸地
-    mctx.beginPath();
-    mctx.arc(0, 0, WORLD.radius * scale, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(120,168,116,0.35)';
-    mctx.fill();
-
-    // 道路
-    mctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    mctx.lineWidth = 5;
+    // 道
+    mctx.strokeStyle = '#dcd8ce';
+    mctx.lineWidth = 6;
+    mctx.lineCap = 'round';
     world.districts.forEach((d) => {
       mctx.beginPath();
       mctx.moveTo(0, 0);
-      mctx.lineTo(d.center.x * scale, d.center.z * scale);
+      mctx.lineTo(d.cx * scale, d.cz * scale);
       mctx.stroke();
     });
 
     // 街区
     world.districts.forEach((d) => {
       mctx.beginPath();
-      mctx.arc(d.center.x * scale, d.center.z * scale, (d.ringRadius + 10) * scale, 0, Math.PI * 2);
-      mctx.fillStyle = `${d.accent}40`;
+      mctx.arc(d.cx * scale, d.cz * scale, (d.ringRadius + 9) * scale, 0, Math.PI * 2);
+      mctx.fillStyle = `${d.accent}22`;
       mctx.fill();
-      mctx.strokeStyle = `${d.accent}aa`;
-      mctx.lineWidth = 2;
-      mctx.stroke();
     });
-
-    // 広場
-    mctx.beginPath();
-    mctx.arc(0, 0, WORLD.plazaRadius * scale, 0, Math.PI * 2);
-    mctx.fillStyle = 'rgba(255,240,214,0.5)';
-    mctx.fill();
 
     // 建物
     world.buildings.forEach((b) => {
       const isTarget = navApp && b.app.id === navApp.id;
       mctx.beginPath();
-      mctx.arc(b.position.x * scale, b.position.z * scale, isTarget ? 6 : 3.4, 0, Math.PI * 2);
-      mctx.fillStyle = isTarget ? '#ffffff' : b.app.color;
+      mctx.arc(b.x * scale, b.z * scale, isTarget ? 5 : 3, 0, Math.PI * 2);
+      mctx.fillStyle = b.app.color;
       mctx.fill();
       if (isTarget) {
-        mctx.strokeStyle = '#ffffff';
-        mctx.lineWidth = 2;
+        mctx.strokeStyle = '#22262f';
+        mctx.lineWidth = 1.6;
         mctx.beginPath();
-        mctx.arc(b.position.x * scale, b.position.z * scale, 11, 0, Math.PI * 2);
+        mctx.arc(b.x * scale, b.z * scale, 10, 0, Math.PI * 2);
         mctx.stroke();
       }
     });
 
-    // プレイヤー
+    // 自分
     mctx.save();
-    mctx.translate(player.position.x * scale, player.position.z * scale);
-    const hx = Math.sin(player.heading);
-    const hz = Math.cos(player.heading);
-    mctx.rotate(Math.atan2(hx, -hz));
+    mctx.translate(player.x * scale, player.z * scale);
+    mctx.rotate(Math.atan2(Math.sin(player.heading), -Math.cos(player.heading)));
     mctx.beginPath();
-    mctx.moveTo(0, -11);
-    mctx.lineTo(7.5, 8);
-    mctx.lineTo(0, 4);
-    mctx.lineTo(-7.5, 8);
+    mctx.moveTo(0, -10);
+    mctx.lineTo(6.5, 7);
+    mctx.lineTo(0, 3.5);
+    mctx.lineTo(-6.5, 7);
     mctx.closePath();
-    mctx.fillStyle = '#ffffff';
+    mctx.fillStyle = '#22262f';
     mctx.fill();
     mctx.restore();
 

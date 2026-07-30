@@ -55,42 +55,42 @@ export const DISTRICTS = [
 
 export const DISTRICT_MAP = new Map(DISTRICTS.map((d) => [d.id, d]));
 
-/** height: 建物の高さ（8〜22 くらいが見栄えが良い） */
+/** height: 建物の高さ（7〜15 くらいがミニマルで見やすい） */
 export const DEFAULT_APPS = [
   // つながり区
-  { id: 'line', name: 'LINE', emoji: '💬', district: 'social', color: '#06c755', scheme: 'line://', web: 'https://line.me/', height: 18 },
-  { id: 'x', name: 'X', emoji: '🐦', district: 'social', color: '#1d1d1f', scheme: 'twitter://', web: 'https://x.com/', height: 21 },
-  { id: 'instagram', name: 'Instagram', emoji: '📷', district: 'social', color: '#d6249f', scheme: 'instagram://', web: 'https://www.instagram.com/', height: 16 },
-  { id: 'gmail', name: 'Gmail', emoji: '✉️', district: 'social', color: '#ea4335', scheme: 'googlegmail://', web: 'https://mail.google.com/', height: 13 },
-  { id: 'discord', name: 'Discord', emoji: '🎧', district: 'social', color: '#5865f2', scheme: 'discord://', web: 'https://discord.com/app', height: 11 },
+  { id: 'line', name: 'LINE', emoji: '💬', district: 'social', color: '#06c755', scheme: 'line://', web: 'https://line.me/', height: 13 },
+  { id: 'x', name: 'X', emoji: '🐦', district: 'social', color: '#1d1d1f', scheme: 'twitter://', web: 'https://x.com/', height: 15 },
+  { id: 'instagram', name: 'Instagram', emoji: '📷', district: 'social', color: '#d6249f', scheme: 'instagram://', web: 'https://www.instagram.com/', height: 11 },
+  { id: 'gmail', name: 'Gmail', emoji: '✉️', district: 'social', color: '#ea4335', scheme: 'googlegmail://', web: 'https://mail.google.com/', height: 9 },
+  { id: 'discord', name: 'Discord', emoji: '🎧', district: 'social', color: '#5865f2', scheme: 'discord://', web: 'https://discord.com/app', height: 8 },
 
   // しごと区
-  { id: 'slack', name: 'Slack', emoji: '💼', district: 'work', color: '#4a154b', scheme: 'slack://open', web: 'https://app.slack.com/', height: 19 },
-  { id: 'notion', name: 'Notion', emoji: '📝', district: 'work', color: '#2f3437', scheme: 'notion://', web: 'https://www.notion.so/', height: 15 },
-  { id: 'calendar', name: 'カレンダー', emoji: '📅', district: 'work', color: '#1a73e8', scheme: '', web: 'https://calendar.google.com/', height: 12 },
-  { id: 'github', name: 'GitHub', emoji: '🐙', district: 'work', color: '#24292f', scheme: 'github://', web: 'https://github.com/', height: 17 },
-  { id: 'chatgpt', name: 'ChatGPT', emoji: '🤖', district: 'work', color: '#10a37f', scheme: '', web: 'https://chatgpt.com/', height: 14 },
+  { id: 'slack', name: 'Slack', emoji: '💼', district: 'work', color: '#4a154b', scheme: 'slack://open', web: 'https://app.slack.com/', height: 13 },
+  { id: 'notion', name: 'Notion', emoji: '📝', district: 'work', color: '#2f3437', scheme: 'notion://', web: 'https://www.notion.so/', height: 11 },
+  { id: 'calendar', name: 'カレンダー', emoji: '📅', district: 'work', color: '#1a73e8', scheme: '', web: 'https://calendar.google.com/', height: 9 },
+  { id: 'github', name: 'GitHub', emoji: '🐙', district: 'work', color: '#24292f', scheme: 'github://', web: 'https://github.com/', height: 12 },
+  { id: 'chatgpt', name: 'ChatGPT', emoji: '🤖', district: 'work', color: '#10a37f', scheme: '', web: 'https://chatgpt.com/', height: 10 },
 
   // たのしみ公園
-  { id: 'youtube', name: 'YouTube', emoji: '▶️', district: 'play', color: '#ff0033', scheme: 'youtube://', web: 'https://www.youtube.com/', height: 22 },
-  { id: 'netflix', name: 'Netflix', emoji: '🎬', district: 'play', color: '#e50914', scheme: 'nflx://', web: 'https://www.netflix.com/', height: 16 },
-  { id: 'spotify', name: 'Spotify', emoji: '🎵', district: 'play', color: '#1db954', scheme: 'spotify://', web: 'https://open.spotify.com/', height: 13 },
-  { id: 'tiktok', name: 'TikTok', emoji: '🎶', district: 'play', color: '#25f4ee', scheme: 'tiktok://', web: 'https://www.tiktok.com/', height: 15 },
-  { id: 'prime', name: 'Prime Video', emoji: '🍿', district: 'play', color: '#00a8e1', scheme: '', web: 'https://www.primevideo.com/', height: 11 },
+  { id: 'youtube', name: 'YouTube', emoji: '▶️', district: 'play', color: '#ff0033', scheme: 'youtube://', web: 'https://www.youtube.com/', height: 15 },
+  { id: 'netflix', name: 'Netflix', emoji: '🎬', district: 'play', color: '#e50914', scheme: 'nflx://', web: 'https://www.netflix.com/', height: 11 },
+  { id: 'spotify', name: 'Spotify', emoji: '🎵', district: 'play', color: '#1db954', scheme: 'spotify://', web: 'https://open.spotify.com/', height: 9 },
+  { id: 'tiktok', name: 'TikTok', emoji: '🎶', district: 'play', color: '#25f4ee', scheme: 'tiktok://', web: 'https://www.tiktok.com/', height: 10 },
+  { id: 'prime', name: 'Prime Video', emoji: '🍿', district: 'play', color: '#00a8e1', scheme: '', web: 'https://www.primevideo.com/', height: 8 },
 
   // くらし通り
-  { id: 'amazon', name: 'Amazon', emoji: '📦', district: 'life', color: '#ff9900', scheme: '', web: 'https://www.amazon.co.jp/', height: 18 },
-  { id: 'rakuten', name: '楽天市場', emoji: '🛒', district: 'life', color: '#bf0000', scheme: '', web: 'https://www.rakuten.co.jp/', height: 14 },
-  { id: 'paypay', name: 'PayPay', emoji: '💳', district: 'life', color: '#ff0033', scheme: 'paypay://', web: 'https://paypay.ne.jp/', height: 12 },
-  { id: 'ubereats', name: 'Uber Eats', emoji: '🍜', district: 'life', color: '#06c167', scheme: 'ubereats://', web: 'https://www.ubereats.com/jp', height: 10 },
-  { id: 'weather', name: '天気', emoji: '⛅', district: 'life', color: '#3aa5dc', scheme: '', web: 'https://tenki.jp/', height: 9 },
+  { id: 'amazon', name: 'Amazon', emoji: '📦', district: 'life', color: '#ff9900', scheme: '', web: 'https://www.amazon.co.jp/', height: 13 },
+  { id: 'rakuten', name: '楽天市場', emoji: '🛒', district: 'life', color: '#bf0000', scheme: '', web: 'https://www.rakuten.co.jp/', height: 10 },
+  { id: 'paypay', name: 'PayPay', emoji: '💳', district: 'life', color: '#ff0033', scheme: 'paypay://', web: 'https://paypay.ne.jp/', height: 9 },
+  { id: 'ubereats', name: 'Uber Eats', emoji: '🍜', district: 'life', color: '#06c167', scheme: 'ubereats://', web: 'https://www.ubereats.com/jp', height: 8 },
+  { id: 'weather', name: '天気', emoji: '⛅', district: 'life', color: '#3aa5dc', scheme: '', web: 'https://tenki.jp/', height: 7 },
 
   // どうぐ横丁
-  { id: 'maps', name: 'マップ', emoji: '🗺️', district: 'tools', color: '#34a853', scheme: 'comgooglemaps://', web: 'https://maps.google.com/', height: 16 },
-  { id: 'browser', name: 'ブラウザ', emoji: '🌐', district: 'tools', color: '#4285f4', scheme: '', web: 'https://www.google.com/', height: 13 },
-  { id: 'phone', name: '電話', emoji: '📞', district: 'tools', color: '#0f9d58', scheme: 'tel:', web: '', height: 10 },
-  { id: 'keep', name: 'メモ', emoji: '🗒️', district: 'tools', color: '#fbbc04', scheme: '', web: 'https://keep.google.com/', height: 11 },
-  { id: 'translate', name: '翻訳', emoji: '🈳', district: 'tools', color: '#4285f4', scheme: '', web: 'https://translate.google.com/', height: 12 },
+  { id: 'maps', name: 'マップ', emoji: '🗺️', district: 'tools', color: '#34a853', scheme: 'comgooglemaps://', web: 'https://maps.google.com/', height: 11 },
+  { id: 'browser', name: 'ブラウザ', emoji: '🌐', district: 'tools', color: '#4285f4', scheme: '', web: 'https://www.google.com/', height: 9 },
+  { id: 'phone', name: '電話', emoji: '📞', district: 'tools', color: '#0f9d58', scheme: 'tel:', web: '', height: 7 },
+  { id: 'keep', name: 'メモ', emoji: '🗒️', district: 'tools', color: '#fbbc04', scheme: '', web: 'https://keep.google.com/', height: 8 },
+  { id: 'translate', name: '翻訳', emoji: '🈳', district: 'tools', color: '#4285f4', scheme: '', web: 'https://translate.google.com/', height: 9 },
 ];
 
 function sanitize(app, index) {
@@ -104,7 +104,7 @@ function sanitize(app, index) {
     color: /^#[0-9a-f]{3,8}$/i.test(app.color || '') ? app.color : '#6b7cff',
     scheme: typeof app.scheme === 'string' ? app.scheme.trim() : '',
     web: typeof app.web === 'string' ? app.web.trim() : '',
-    height: Number.isFinite(height) ? Math.min(26, Math.max(7, height)) : 12,
+    height: Number.isFinite(height) ? Math.min(18, Math.max(6, height)) : 10,
   };
 }
 

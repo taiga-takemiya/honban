@@ -1,6 +1,6 @@
 import { createRenderer } from './gl.js';
 import { DISTRICT_MAP, loadApps, saveApps, resetApps, makeId, openApp } from './apps.js';
-import { WORLD, buildWorld } from './world.js';
+import { WORLD, buildWorld, buildRoom } from './world.js';
 import { createPlayer, updatePlayer, drawPlayer } from './player.js';
 import { createControls } from './controls.js';
 import { createUI } from './ui.js';
@@ -9,7 +9,8 @@ import { createSkyState, sampleSky, currentHour } from './sky.js';
 const TIME_PRESETS = { morning: 7.2, day: 12.5, evening: 18.6, night: 22.5 };
 const DPR_CAP = { high: 2, balanced: 1.5, low: 1 };
 const NEAR_RADIUS = 11;
-const AUTO_OPEN_RADIUS = 4.5;
+const DOOR_RADIUS = 4.5; // ここまで来るとドアをくぐって部屋に入る
+const PANEL_RADIUS = 3.6; // 部屋の中でパネルの前と見なす距離
 const START = { x: 7, z: WORLD.plazaRadius * 0.72 };
 
 const canvas = document.getElementById('scene');
@@ -24,6 +25,7 @@ const ui = createUI({
   getCameraYaw: () => controls?.state.yaw ?? 0,
   onNavigate: (app) => navigateTo(app, true),
   onCancelNav: () => clearNav(),
+  onExitRoom: () => exitRoom(),
   onHome: () => goHome(),
   onOpenNearby: () => {
     if (nearby) launch(nearby.app);
@@ -70,6 +72,7 @@ if (!renderer) {
 
 const sky = createSkyState();
 let world = buildWorld(renderer, apps);
+const room = buildRoom(renderer);
 const player = createPlayer(renderer);
 player.x = START.x;
 player.z = START.z;
@@ -98,6 +101,15 @@ const controls = createControls({
 function handleTap(clientX, clientY) {
   if (ui.isPanelOpen()) {
     ui.closePanels();
+    return;
+  }
+  if (mode === 'room') {
+    // 部屋の中は「その場所まで歩く」だけ
+    const rw = window.innerWidth;
+    const rh = window.innerHeight;
+    const r = renderer.screenRay((clientX / rw) * 2 - 1, -((clientY / rh) * 2 - 1), rw / rh);
+    const t = r.dir[1] < -1e-6 ? -r.origin[1] / r.dir[1] : Infinity;
+    if (t < Infinity) setWalkTarget(r.origin[0] + r.dir[0] * t, r.origin[2] + r.dir[2] * t);
     return;
   }
   const w = window.innerWidth;
@@ -140,6 +152,11 @@ function handleTap(clientX, clientY) {
 
 /* ---------------------------------------------------------- ナビゲーション */
 
+let mode = 'town'; // 'town' | 'room'
+let currentRoom = null; // 入っている建物
+let townReturn = { x: 0, z: 0, yaw: Math.PI };
+let fade = 0; // 0=通常 1=真っ白（出入りの演出）
+let doorCooldown = 0; // 部屋を出た直後にまた入らないための待ち時間
 let navTarget = null;
 let walkTarget = null;
 let nearby = null;
@@ -153,6 +170,7 @@ function setWalkTarget(x, z) {
 }
 
 function navigateTo(app, walk) {
+  if (mode === 'room') exitRoom();
   const building = world.buildings.find((b) => b.app.id === app.id);
   if (!building) return;
   navTarget = building;
@@ -168,8 +186,57 @@ function clearNav() {
 }
 
 function goHome() {
+  if (mode === 'room') exitRoom();
   setWalkTarget(START.x, START.z);
   ui.toast('中央広場へ');
+}
+
+function enterRoom(building) {
+  if (mode === 'room') return;
+  mode = 'room';
+  currentRoom = building;
+  townReturn = { x: player.x, z: player.z, yaw: controls.state.yaw };
+  player.x = room.entrance.x;
+  player.z = room.entrance.z;
+  player.vx = 0;
+  player.vz = 0;
+  player.heading = Math.PI;
+  controls.state.yaw = Math.PI;
+  walkTarget = null;
+  navTarget = null;
+  autoOpenGuard = null;
+  fade = 1;
+  ui.setMode('room');
+  ui.setPlace(`${building.app.name} の部屋`);
+  ui.toast('奥のパネルまで歩くと開きます');
+}
+
+function exitRoom() {
+  if (mode !== 'room') return;
+  mode = 'town';
+  const b = currentRoom;
+  currentRoom = null;
+  if (b) {
+    // 建物から少し離れた位置に出す（すぐ入り直さないように）
+    const ox = b.doorX - b.x;
+    const oz = b.doorZ - b.z;
+    const len = Math.hypot(ox, oz) || 1;
+    player.x = b.x + (ox / len) * (b.radius + 8);
+    player.z = b.z + (oz / len) * (b.radius + 8);
+  } else {
+    player.x = townReturn.x;
+    player.z = townReturn.z;
+  }
+  player.vx = 0;
+  player.vz = 0;
+  controls.state.yaw = townReturn.yaw;
+  walkTarget = null;
+  autoOpenGuard = null;
+  doorCooldown = 1.5;
+  fade = 1;
+  ui.setMode('town');
+  ui.setNearby(null);
+  ui.setPlace(world.districtAt(player.x, player.z).name);
 }
 
 function launch(app) {
@@ -251,6 +318,20 @@ const env = {
 
 const cam = { x: 0, y: 20, z: 40 };
 const camSolve = { dist: 28, y: 18 };
+const ROOM_COLLIDERS = []; // カウンター（部屋の中で通り抜けられない物）
+
+ROOM_COLLIDERS.push({ x: room.counter.x, z: room.counter.z, r: room.counter.r, h: 1.4 });
+
+/** 室内の光（外の時間帯に関係なく明るく保つ） */
+const INDOOR = {
+  sun: [0.25, 0.92, 0.3],
+  sunColor: [0.34, 0.33, 0.31],
+  skyColor: [0.6, 0.58, 0.55],
+  groundColor: [0.34, 0.32, 0.29],
+  fogColor: [0.1, 0.1, 0.12],
+  fogDensity: 0.0008,
+  clear: [0.07, 0.07, 0.09],
+};
 const drawCtx = { night: 0, tint: sky.tint, eye: renderer.camera.eye, path: null, pathOffset: 0 };
 const moveDir = { x: 0, z: 0 };
 let last = performance.now();
@@ -262,6 +343,8 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
 
+  if (doorCooldown > 0) doorCooldown -= dt;
+  if (mode === 'room') controls.state.yaw = Math.PI;
   const usingKeys = controls.applyKeyboard(dt);
   const { state } = controls;
   let fx = Math.sin(state.yaw);
@@ -290,7 +373,14 @@ function tick(now) {
     moveDir.z = 0;
   }
 
-  updatePlayer(player, moveDir, dt, world.colliders);
+  if (mode === 'room') {
+    updatePlayer(player, moveDir, dt, ROOM_COLLIDERS);
+    const lim = room.half;
+    player.x = Math.min(lim, Math.max(-lim, player.x));
+    player.z = Math.min(room.exitZ + 1.2, Math.max(-lim, player.z));
+  } else {
+    updatePlayer(player, moveDir, dt, world.colliders);
+  }
 
   // 到着したら建物の方を向く
   if (yawEase !== null) {
@@ -322,11 +412,23 @@ function tick(now) {
 
   const cos = Math.cos(state.pitch);
   const sin = Math.sin(state.pitch);
-  solveCamera(fx * cos, fz * cos, state.distance, 2.4 + sin * state.distance, camSolve);
-  const dist = camSolve.dist;
-  const wantX = player.x - fx * cos * dist;
-  const wantZ = player.z - fz * cos * dist;
-  const wantY = camSolve.y;
+  let wantX;
+  let wantY;
+  let wantZ;
+  if (mode === 'room') {
+    // 部屋は固定カメラ（部屋全体が見えるように少し上から）
+    renderer.camera.fov = 1.15; // 部屋は広角にして全体を見せる
+    wantX = 0;
+    wantY = 11;
+    wantZ = 18;
+  } else {
+    renderer.camera.fov = 0.95;
+    solveCamera(fx * cos, fz * cos, state.distance, 2.4 + sin * state.distance, camSolve);
+    const dist = camSolve.dist;
+    wantX = player.x - fx * cos * dist;
+    wantZ = player.z - fz * cos * dist;
+    wantY = camSolve.y;
+  }
   const k = started ? 1 - Math.pow(0.002, dt) : 1;
   cam.x += (wantX - cam.x) * k;
   cam.y += (wantY - cam.y) * k;
@@ -338,37 +440,55 @@ function tick(now) {
   eye[1] = Math.max(2.5, cam.y);
   eye[2] = cam.z;
   const target = renderer.camera.target;
-  target[0] = player.x;
-  target[1] = 8;
-  target[2] = player.z;
-
-  /* 近くの建物 */
-  let best = null;
-  let bestDist = Infinity;
-  for (let i = 0; i < world.buildings.length; i += 1) {
-    const b = world.buildings[i];
-    const d = Math.hypot(player.x - b.doorX, player.z - b.doorZ);
-    if (d < bestDist) {
-      bestDist = d;
-      best = b;
-    }
+  if (mode === 'room') {
+    target[0] = 0;
+    target[1] = 3;
+    target[2] = -2;
+  } else {
+    target[0] = player.x;
+    target[1] = 8;
+    target[2] = player.z;
   }
 
-  if (best && bestDist < NEAR_RADIUS) {
-    nearby = best;
-    ui.setNearby(best.app, bestDist);
-    if (ui.settings.autoOpen && bestDist < AUTO_OPEN_RADIUS && autoOpenGuard !== best.app.id) {
-      autoOpenGuard = best.app.id;
-      launch(best.app);
+  /* 近くの建物（ドアに触れたら部屋に入る） */
+  if (mode === 'town') {
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < world.buildings.length; i += 1) {
+      const b = world.buildings[i];
+      const d = Math.hypot(player.x - b.doorX, player.z - b.doorZ);
+      if (d < bestDist) {
+        bestDist = d;
+        best = b;
+      }
+    }
+
+    if (best && bestDist < NEAR_RADIUS) {
+      nearby = best;
+      ui.setNearby(best.app, bestDist, false);
+      const onTheWay = walkTarget && navTarget && navTarget !== best;
+      if (bestDist < DOOR_RADIUS && doorCooldown <= 0 && !onTheWay) {
+        enterRoom(best);
+      }
+    } else {
+      nearby = null;
+      ui.setNearby(null);
     }
   } else {
-    nearby = null;
-    ui.setNearby(null);
-    if (bestDist > NEAR_RADIUS + 6) autoOpenGuard = null;
+    // 部屋の中：パネルの前まで来たら「開く」
+    const d = Math.hypot(player.x - room.panel.x, player.z - room.panel.z);
+    nearby = currentRoom;
+    ui.setNearby(currentRoom.app, d, d < PANEL_RADIUS);
+    if (ui.settings.autoOpen && d < PANEL_RADIUS && autoOpenGuard !== currentRoom.app.id) {
+      autoOpenGuard = currentRoom.app.id;
+      launch(currentRoom.app);
+    }
+    if (player.z > room.exitZ) exitRoom();
   }
 
   /* 建物の輪 */
   const pulse = 0.4 + Math.sin(now * 0.0035) * 0.18;
+  if (mode === 'room') for (let i = 0; i < world.buildings.length; i += 1) world.buildings[i].ringAlpha = 0;
   for (let i = 0; i < world.buildings.length; i += 1) {
     const b = world.buildings[i];
     let want = 0;
@@ -379,7 +499,7 @@ function tick(now) {
 
   /* ナビ */
   drawCtx.path = null;
-  if (navTarget) {
+  if (navTarget && mode === 'town') {
     const dx = navTarget.doorX - player.x;
     const dz = navTarget.doorZ - player.z;
     const d = Math.hypot(dx, dz);
@@ -411,7 +531,7 @@ function tick(now) {
   if (uiClock > 0.5) {
     uiClock = 0;
     ui.updateClock();
-    ui.setPlace(world.districtAt(player.x, player.z).name);
+    if (mode === 'town') ui.setPlace(world.districtAt(player.x, player.z).name);
   }
   skyClock += dt;
   if (skyClock > 30) {
@@ -420,12 +540,24 @@ function tick(now) {
   }
 
   /* 描画 */
-  env.fogDensity = 0.0042 + sky.night * 0.0018;
-  renderer.beginFrame(env);
-  world.drawGround(drawCtx);
-  drawPlayer(renderer, player);
-  world.drawShadow(player.x, player.z, 5, 0.8 - sky.night * 0.4);
-  world.drawOverlay(drawCtx);
+  if (mode === 'room') {
+    renderer.beginFrame(INDOOR);
+    room.draw(currentRoom);
+    drawPlayer(renderer, player);
+    world.drawShadow(player.x, player.z, 5, 0.5);
+  } else {
+    env.fogDensity = 0.0042 + sky.night * 0.0018;
+    renderer.beginFrame(env);
+    world.drawGround(drawCtx);
+    drawPlayer(renderer, player);
+    world.drawShadow(player.x, player.z, 5, 0.8 - sky.night * 0.4);
+    world.drawOverlay(drawCtx);
+  }
+
+  if (fade > 0.001) {
+    fade = Math.max(0, fade - dt * 2.2);
+    ui.setFade(fade);
+  }
 
   ui.drawMinimap(world, player, state.yaw, navTarget?.app ?? null);
   requestAnimationFrame(tick);

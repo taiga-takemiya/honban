@@ -51,6 +51,8 @@
         <button type="button" class="open-btn" id="nearby-open">開く</button>
       </div>
 
+      <button type="button" class="exit-room-btn hidden" id="btn-exit-room">← 部屋から出る</button>
+
       <div class="hud-bottom">
         <button type="button" class="hud-btn" id="btn-home">🏠<span>広場へ</span></button>
         <button type="button" class="hud-btn primary" id="btn-search">🔍<span>さがす</span></button>
@@ -88,7 +90,7 @@
           </select>
         </label>
         <label class="row">
-          <span>近づいたら自動で開く</span>
+          <span>パネルの前で自動で開く</span>
           <input type="checkbox" id="auto-open" />
         </label>
         <label class="row">
@@ -140,6 +142,8 @@
         </div>
       </form>
     </section>
+
+    <div id="fade"></div>
 
     <div id="toast" role="status" aria-live="polite"></div>
 

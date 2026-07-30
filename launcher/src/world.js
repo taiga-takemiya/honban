@@ -574,3 +574,91 @@ export function buildWorld(renderer, apps) {
     shadowTexture,
   };
 }
+
+/* --------------------------------------------------------------- 部屋の中 */
+
+const ROOM = {
+  half: 8, // 部屋の内側の半径（正方形の半分）
+  wall: 7, // 壁の高さ
+  entranceZ: 6.8, // 入口（ここより奥に行くと外に出る）
+  panelZ: -7.5, // 奥の壁のパネル
+  counterZ: -5,
+};
+
+/**
+ * どのアプリでも共通で使う「部屋」。
+ * 建物のドアをくぐるとこの部屋に入り、奥のパネルまで歩くとアプリが起動する。
+ */
+export function buildRoom(renderer) {
+  const FLOOR = hexToRgb('#d9c9ad');
+  const RUG = hexToRgb('#c2a882');
+  const WALL_A = hexToRgb('#f4efe4');
+  const WALL_B = hexToRgb('#e7e0d1');
+  const COUNTER = hexToRgb('#9d8a6d');
+  const TRIM = hexToRgb('#c9bda4');
+
+  const geo = createGeometry();
+  const m = mat4();
+  const add = (part, x, y, z, ry, color) => {
+    compose(m, x, y, z, ry || 0, 1, 1, 1);
+    append(geo, part, m, color);
+  };
+
+  const h = ROOM.half;
+  add(quadXZ(h * 2, h * 2), 0, 0, 0, 0, FLOOR);
+  add(quadXZ(8, 8), 0, 0.02, -1.5, 0, RUG);
+
+  // 壁（奥・左右・手前は入口を空ける）
+  add(box(h * 2, ROOM.wall, 0.6), 0, ROOM.wall / 2, -h, 0, WALL_A);
+  add(box(0.6, ROOM.wall, h * 2), -h, ROOM.wall / 2, 0, 0, WALL_B);
+  add(box(0.6, ROOM.wall, h * 2), h, ROOM.wall / 2, 0, 0, WALL_B);
+  [-1, 1].forEach((s) => {
+    add(box(5.6, ROOM.wall, 0.6), s * 5.2, ROOM.wall / 2, h, 0, WALL_B);
+  });
+  // 入口の上のまぐさ
+  add(box(4.8, 1.4, 0.6), 0, ROOM.wall - 0.7, h, 0, WALL_B);
+  // 幅木
+  add(box(h * 2, 0.3, 0.7), 0, 0.15, -h, 0, TRIM);
+
+  // カウンター
+  add(box(7, 1.2, 1.6), 0, 0.6, ROOM.counterZ, 0, COUNTER);
+  add(box(7.4, 0.16, 1.9), 0, 1.28, ROOM.counterZ, 0, TRIM);
+
+  const mesh = renderer.createMesh(geo);
+  const panelQuad = renderer.createMeshFromPart(quadXY(1, 1), [1, 1, 1]);
+  const bandQuad = renderer.createMeshFromPart(quadXY(1, 1), [1, 1, 1]);
+  const model = mat4();
+
+  /** 部屋を描く。app の看板テクスチャを奥のパネルに出す */
+  function draw(building) {
+    renderer.draw(mesh, {});
+    // アクセントの帯
+    compose(model, 0, 6, ROOM.panelZ + 0.02, 0, 14, 0.45, 1);
+    renderer.draw(bandQuad, { model, tint: [...building.rgb, 1], unlit: true });
+    // アプリのパネル
+    compose(model, 0, 3.7, ROOM.panelZ + 0.05, 0, 7.2, 7.2, 1);
+    renderer.draw(panelQuad, {
+      model,
+      texture: building.sign.texture,
+      unlit: true,
+      blend: true,
+      depthWrite: false,
+    });
+  }
+
+  function dispose() {
+    renderer.disposeMesh(mesh);
+    renderer.disposeMesh(panelQuad);
+    renderer.disposeMesh(bandQuad);
+  }
+
+  return {
+    draw,
+    dispose,
+    entrance: { x: 0, z: ROOM.entranceZ - 0.6 },
+    panel: { x: 0, z: ROOM.counterZ + 1.6 },
+    exitZ: ROOM.entranceZ,
+    half: ROOM.half - 1.2,
+    counter: { x: 0, z: ROOM.counterZ, r: 3.2 },
+  };
+}

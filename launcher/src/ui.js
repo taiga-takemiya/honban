@@ -79,6 +79,8 @@ export function createUI(handlers) {
     ioArea: $('io-area'),
     toast: $('toast'),
     boot: $('boot'),
+    fade: $('fade'),
+    btnExitRoom: $('btn-exit-room'),
   };
 
   const settings = loadSettings();
@@ -285,6 +287,7 @@ export function createUI(handlers) {
   });
 
   el.nearbyOpen.addEventListener('click', () => handlers.onOpenNearby());
+  el.btnExitRoom.addEventListener('click', () => handlers.onExitRoom());
   el.navCancel.addEventListener('click', () => handlers.onCancelNav());
 
   /* ------------------------------------------------------------ 時計 */
@@ -301,7 +304,14 @@ export function createUI(handlers) {
 
   /* -------------------------------------------------------- 近くの表示 */
   let nearbyId = null;
-  function setNearby(app, distance) {
+  let mode = 'town';
+
+  /**
+   * @param {object|null} app
+   * @param {number} distance
+   * @param {boolean} canOpen 「開く」を押せる状態か（部屋の中でパネルの前にいる時だけ true）
+   */
+  function setNearby(app, distance, canOpen) {
     if (!app) {
       if (nearbyId !== null) {
         nearbyId = null;
@@ -315,7 +325,26 @@ export function createUI(handlers) {
       el.nearbyName.textContent = app.name;
       el.nearbyCard.classList.remove('hidden');
     }
-    el.nearbySub.textContent = distance < 6 ? '入口の前にいます' : `${Math.round(distance)} m先の入口`;
+    el.nearbyCard.classList.toggle('no-open', !canOpen);
+    if (mode === 'room') {
+      el.nearbySub.textContent = canOpen ? 'パネルの前です' : `奥のパネルまで あと ${Math.round(distance)} m`;
+    } else {
+      el.nearbySub.textContent = distance < 7 ? 'ドアから中へ入れます' : `${Math.round(distance)} m先の入口`;
+    }
+  }
+
+  /** 'town' か 'room' */
+  function setMode(next) {
+    mode = next;
+    nearbyId = null;
+    document.body.classList.toggle('in-room', next === 'room');
+    el.btnExitRoom.classList.toggle('hidden', next !== 'room');
+    if (next === 'room') el.nearbyCard.classList.add('no-open');
+  }
+
+  /** 出入りの白フラッシュ（1 → 0 で消える） */
+  function setFade(value) {
+    el.fade.style.opacity = String(Math.max(0, Math.min(1, value)));
   }
 
   /* -------------------------------------------------------------- ナビ */
@@ -478,6 +507,8 @@ export function createUI(handlers) {
     settings,
     toast,
     setNearby,
+    setMode,
+    setFade,
     setNav,
     setPlace,
     updateClock,

@@ -10,7 +10,7 @@ const TIME_PRESETS = { morning: 7.2, day: 12.5, evening: 18.6, night: 22.5 };
 const DPR_CAP = { high: 2, balanced: 1.5, low: 1 };
 const NEAR_RADIUS = 11;
 const AUTO_OPEN_RADIUS = 4.5;
-const START = { x: 6, z: WORLD.plazaRadius * 0.7 };
+const START = { x: 7, z: WORLD.plazaRadius * 0.72 };
 
 const canvas = document.getElementById('scene');
 const renderer = createRenderer(canvas);
@@ -339,7 +339,7 @@ function tick(now) {
   eye[2] = cam.z;
   const target = renderer.camera.target;
   target[0] = player.x;
-  target[1] = 7.5;
+  target[1] = 8;
   target[2] = player.z;
 
   /* 近くの建物 */
@@ -420,11 +420,11 @@ function tick(now) {
   }
 
   /* 描画 */
-  env.fogDensity = 0.0034 + sky.night * 0.0016;
+  env.fogDensity = 0.0042 + sky.night * 0.0018;
   renderer.beginFrame(env);
   world.drawGround(drawCtx);
-  drawPlayer(renderer, player, sky.tint);
-  world.drawShadow(player.x, player.z, 4.4, 0.75 - sky.night * 0.4);
+  drawPlayer(renderer, player);
+  world.drawShadow(player.x, player.z, 5, 0.8 - sky.night * 0.4);
   world.drawOverlay(drawCtx);
 
   ui.drawMinimap(world, player, state.yaw, navTarget?.app ?? null);

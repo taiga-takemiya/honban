@@ -13,7 +13,7 @@ export function createControls({ layer, stickBase, stickKnob, onTap }) {
     move: { x: 0, y: 0 },
     yaw: Math.PI,
     pitch: 0.55,
-    distance: 28,
+    distance: 34,
     stickActive: false,
     lookActive: false,
     keys: new Set(),
@@ -73,7 +73,7 @@ export function createControls({ layer, stickBase, stickKnob, onTap }) {
       const [a, b] = [...pointers.values()];
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
       const scale = pinch.dist / Math.max(1, dist);
-      state.distance = Math.min(70, Math.max(14, pinch.start * scale));
+      state.distance = Math.min(80, Math.max(16, pinch.start * scale));
       return;
     }
 
@@ -139,7 +139,7 @@ export function createControls({ layer, stickBase, stickKnob, onTap }) {
   window.addEventListener(
     'wheel',
     (e) => {
-      state.distance = Math.min(70, Math.max(14, state.distance + e.deltaY * 0.02));
+      state.distance = Math.min(80, Math.max(16, state.distance + e.deltaY * 0.02));
     },
     { passive: true }
   );

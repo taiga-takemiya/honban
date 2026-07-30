@@ -113,7 +113,7 @@ const tmp = new Float32Array(3);
  * geo に別のジオメトリを（変換して）追加する。
  * matrix は compose() で作った 4x4。色は [r,g,b]（0〜1）。
  */
-export function append(geo, part, matrix, color) {
+export function append(geo, part, matrix, color, uvScale) {
   const base = geo.pos.length / 3;
   const p = part.pos;
   const n = part.normal;
@@ -140,7 +140,9 @@ export function append(geo, part, matrix, color) {
     geo.color.push(color[0], color[1], color[2]);
   }
   if (part.uv) {
-    for (let i = 0; i < part.uv.length; i += 1) geo.uv.push(part.uv[i]);
+    const su = uvScale ? uvScale[0] : 1;
+    const sv = uvScale ? uvScale[1] : 1;
+    for (let i = 0; i < part.uv.length; i += 2) geo.uv.push(part.uv[i] * su, part.uv[i + 1] * sv);
   } else {
     for (let i = 0; i < p.length / 3; i += 1) geo.uv.push(0, 0);
   }
@@ -272,11 +274,11 @@ export function cylinder(rTop, rBottom, h, segments) {
 }
 
 /** 低ポリの球（原点が中心） */
-export function sphere(radius, segments, rings) {
+export function sphere(radius, segments, rings, phiFrom = 0, phiTo = Math.PI) {
   const part = emptyPart();
   for (let y = 0; y <= rings; y += 1) {
     const v = y / rings;
-    const phi = v * Math.PI;
+    const phi = phiFrom + v * (phiTo - phiFrom);
     for (let x = 0; x <= segments; x += 1) {
       const u = x / segments;
       const theta = u * Math.PI * 2;
@@ -562,7 +564,10 @@ export function createRenderer(canvas) {
       gl.uniform1f(uni.uUseTex, 0);
     }
 
-    if (opts.blend) {
+    if (opts.blend === 'add') {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    } else if (opts.blend) {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     } else {

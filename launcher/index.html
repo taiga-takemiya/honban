@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Map Launcher</title>
-    <meta name="description" content="街を歩いてアプリを開く、ミニマルな3Dマップ型ホームランチャー" />
-    <meta name="theme-color" content="#eaeef2" />
+    <title>3D Map Launcher</title>
+    <meta name="description" content="街を歩いてアプリを開く、3Dマップ型ホームランチャー" />
+    <meta name="theme-color" content="#0f1424" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link rel="icon" href="icons/icon-192.png" />
@@ -23,14 +23,14 @@
 
     <div id="hud">
       <div class="hud-top">
-        <div class="pill clock">
+        <div class="clock">
           <strong id="clock-time">--:--</strong>
           <small id="clock-date"></small>
         </div>
-        <div class="pill" id="place-chip">中央広場</div>
+        <div class="place-chip" id="place-chip">中央広場</div>
       </div>
 
-      <div class="nav-banner pill hidden" id="nav-banner">
+      <div class="nav-banner hidden" id="nav-banner">
         <span class="nav-emoji" id="nav-emoji">📍</span>
         <div class="nav-text">
           <strong id="nav-name">目的地</strong>
@@ -40,7 +40,7 @@
         <button type="button" class="nav-cancel" id="nav-cancel" aria-label="案内をやめる">✕</button>
       </div>
 
-      <canvas id="minimap" width="220" height="220" aria-label="ミニマップ"></canvas>
+      <canvas id="minimap" width="260" height="260" aria-label="ミニマップ"></canvas>
 
       <div class="nearby-card hidden" id="nearby-card">
         <div class="nearby-emoji" id="nearby-emoji">📱</div>
@@ -52,9 +52,9 @@
       </div>
 
       <div class="hud-bottom">
-        <button type="button" class="icon-btn" id="btn-home" aria-label="中央広場へ">⌂</button>
-        <button type="button" class="search-btn" id="btn-search">アプリをさがす</button>
-        <button type="button" class="icon-btn" id="btn-settings" aria-label="設定">⚙</button>
+        <button type="button" class="hud-btn" id="btn-home">🏠<span>広場へ</span></button>
+        <button type="button" class="hud-btn primary" id="btn-search">🔍<span>さがす</span></button>
+        <button type="button" class="hud-btn" id="btn-settings">⚙️<span>設定</span></button>
       </div>
     </div>
 
@@ -66,8 +66,8 @@
       <p class="panel-hint">タップすると、その建物までの道を案内します。</p>
       <div class="app-grid" id="app-grid"></div>
       <div class="panel-foot">
-        <button type="button" class="ghost" id="btn-add">＋ 追加</button>
-        <button type="button" class="ghost" id="btn-edit-mode">編集</button>
+        <button type="button" class="ghost" id="btn-add">＋ アプリを追加</button>
+        <button type="button" class="ghost" id="btn-edit-mode">✏️ 編集</button>
       </div>
     </section>
 
@@ -96,7 +96,7 @@
           <select id="quality">
             <option value="high">きれい</option>
             <option value="balanced">ふつう</option>
-            <option value="low">軽量（省電力）</option>
+            <option value="low">軽量</option>
           </select>
         </label>
         <div class="row stack">
@@ -104,12 +104,13 @@
           <div class="btn-row">
             <button type="button" class="ghost" id="btn-export">書き出す</button>
             <button type="button" class="ghost" id="btn-import">読み込む</button>
-            <button type="button" class="ghost danger" id="btn-reset">初期化</button>
+            <button type="button" class="ghost danger" id="btn-reset">初期状態に戻す</button>
           </div>
           <textarea id="io-area" rows="4" placeholder="ここに JSON が表示されます／貼り付けて「読み込む」"></textarea>
         </div>
         <p class="panel-hint">
-          通信は初回の読み込みだけ（gzipで約40KB）。2回目以降はキャッシュから起動し、地図データの通信もありません。
+          ホーム画面に追加すると全画面で起動します。アプリを開く動作は端末にインストール済みのアプリと
+          URL スキームに依存します（開けない場合は Web 版が開きます）。
         </p>
       </div>
     </section>
@@ -131,7 +132,7 @@
         <label>アプリのURLスキーム<input type="text" id="f-scheme" placeholder="line:// など" autocapitalize="off" spellcheck="false" /></label>
         <label>Web版のURL（開けなかった時用）<input type="url" id="f-web" placeholder="https://..." autocapitalize="off" spellcheck="false" /></label>
         <label>建物の高さ <span class="range-value" id="f-height-value">12</span>
-          <input type="range" id="f-height" min="6" max="18" step="1" />
+          <input type="range" id="f-height" min="7" max="26" step="1" />
         </label>
         <div class="btn-row">
           <button type="submit" class="open-btn">保存</button>
@@ -144,15 +145,15 @@
 
     <div id="boot">
       <div class="boot-inner">
-        <span class="boot-dot"></span>
-        <p>街をつくっています</p>
+        <div class="boot-mark">🗺️</div>
+        <p>街をつくっています…</p>
       </div>
     </div>
 
     <div id="fallback" class="hidden">
       <div>
         <h1>3D表示に対応していません</h1>
-        <p>お使いのブラウザで WebGL が利用できないため、マップを表示できません。一覧から起動できます。</p>
+        <p>お使いのブラウザで WebGL が利用できないため、マップを表示できません。<br />別のブラウザでお試しください。</p>
         <div class="app-grid" id="fallback-grid"></div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { DISTRICTS, DISTRICT_MAP } from './apps.js';
+import { DISTRICTS, DISTRICT_MAP, HOST } from './apps.js';
 import { WORLD } from './world.js';
 
 const SETTINGS_KEY = 'map-launcher.settings.v1';
@@ -134,7 +134,15 @@ export function createUI(handlers) {
         <span class="emoji"></span>
         <span class="name"></span>
         <span class="zone"></span>`;
-      cell.querySelector('.emoji').textContent = app.emoji;
+      if (app.icon) {
+        const img = document.createElement('img');
+        img.src = app.icon;
+        img.alt = '';
+        img.className = 'app-icon';
+        cell.querySelector('.emoji').replaceWith(img);
+      } else {
+        cell.querySelector('.emoji').textContent = app.emoji;
+      }
       cell.querySelector('.name').textContent = app.name;
       cell.querySelector('.zone').textContent = DISTRICT_MAP.get(app.district)?.name ?? '';
       cell.style.borderColor = `${app.color}66`;
@@ -321,7 +329,16 @@ export function createUI(handlers) {
     }
     if (app.id !== nearbyId) {
       nearbyId = app.id;
-      el.nearbyEmoji.textContent = app.emoji;
+      if (app.icon) {
+        el.nearbyEmoji.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = app.icon;
+        img.alt = '';
+        img.className = 'app-icon';
+        el.nearbyEmoji.appendChild(img);
+      } else {
+        el.nearbyEmoji.textContent = app.emoji;
+      }
       el.nearbyName.textContent = app.name;
       el.nearbyCard.classList.remove('hidden');
     }
@@ -491,11 +508,31 @@ export function createUI(handlers) {
       cell.type = 'button';
       cell.className = 'app-cell';
       cell.innerHTML = '<span class="emoji"></span><span class="name"></span>';
-      cell.querySelector('.emoji').textContent = app.emoji;
+      if (app.icon) {
+        const img = document.createElement('img');
+        img.src = app.icon;
+        img.alt = '';
+        img.className = 'app-icon';
+        cell.querySelector('.emoji').replaceWith(img);
+      } else {
+        cell.querySelector('.emoji').textContent = app.emoji;
+      }
       cell.querySelector('.name').textContent = app.name;
       cell.addEventListener('click', () => handlers.onOpenApp(app));
       grid.appendChild(cell);
     });
+  }
+
+  if (HOST) {
+    // 端末のアプリを並べているので、追加・削除・バックアップは使わない
+    el.btnAdd.classList.add('hidden');
+    document.querySelectorAll('.row.stack').forEach((row) => row.classList.add('hidden'));
+    const hint = document.createElement('button');
+    hint.type = 'button';
+    hint.className = 'ghost';
+    hint.textContent = 'ホームアプリの設定を開く';
+    hint.addEventListener('click', () => HOST.chooseHomeApp && HOST.chooseHomeApp());
+    document.querySelector('#panel-settings .settings-body').appendChild(hint);
   }
 
   fillDistrictOptions();

@@ -749,3 +749,17 @@ body.in-room #nav-banner {
   opacity: 0;
   pointer-events: none;
 }
+
+/* 端末のアプリアイコン（Androidアプリとして動いている時） */
+.app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: block;
+}
+
+.nearby-emoji .app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}

@@ -87,8 +87,18 @@ function makeSignCanvas(app) {
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `96px ${EMOJI_FONT}`;
-  ctx.fillText(app.emoji, size / 2, 132);
+  if (app._img) {
+    // 端末のアプリアイコン
+    ctx.drawImage(app._img, size / 2 - 52, 80, 104, 104);
+  } else if (app.emoji) {
+    ctx.font = `96px ${EMOJI_FONT}`;
+    ctx.fillText(app.emoji, size / 2, 132);
+  } else {
+    ctx.fillStyle = app.color;
+    ctx.beginPath();
+    ctx.arc(size / 2, 132, 44, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.fillStyle = '#1d2233';
   let fontSize = 38;

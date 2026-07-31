@@ -1,1 +1,6 @@
 launcher/standalone.html
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/launcher.html

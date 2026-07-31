@@ -4,6 +4,7 @@
  */
 
 const STORAGE_KEY = 'map-launcher.apps.v1';
+const HOST_OVERRIDE_KEY = 'map-launcher.host-overrides.v1';
 
 export const DISTRICTS = [
   {
@@ -104,11 +105,65 @@ function sanitize(app, index) {
     color: /^#[0-9a-f]{3,8}$/i.test(app.color || '') ? app.color : '#6b7cff',
     scheme: typeof app.scheme === 'string' ? app.scheme.trim() : '',
     web: typeof app.web === 'string' ? app.web.trim() : '',
+    pkg: typeof app.pkg === 'string' ? app.pkg : '',
+    icon: typeof app.icon === 'string' ? app.icon : '',
     height: Number.isFinite(height) ? Math.min(26, Math.max(7, height)) : 12,
   };
 }
 
+/** Android アプリ（WebView）から渡されるブリッジ。無ければ null */
+export const HOST = typeof window !== 'undefined' && window.AndroidHost ? window.AndroidHost : null;
+
+/** 端末にインストールされているアプリを街の住人にする */
+function loadFromHost() {
+  const raw = JSON.parse(HOST.listApps());
+  const overrides = readOverrides();
+  return raw.map((item, index) => {
+    const rng = ((index * 2654435761) % 1000) / 1000;
+    const base = {
+      id: item.pkg,
+      pkg: item.pkg,
+      name: item.name,
+      emoji: '',
+      icon: item.icon || '',
+      district: DISTRICT_MAP.has(item.district) ? item.district : 'tools',
+      color: /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : '#6b7cff',
+      scheme: '',
+      web: '',
+      height: Math.round(9 + rng * 9), // 高さは見た目のばらつき用
+    };
+    return { ...base, ...(overrides[item.pkg] || {}) };
+  });
+}
+
+/** 端末のアプリに対してユーザーが変更した内容（街区・色・高さなど） */
+function readOverrides() {
+  try {
+    return JSON.parse(localStorage.getItem(HOST_OVERRIDE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export function saveHostOverride(id, patch) {
+  const all = readOverrides();
+  all[id] = { ...(all[id] || {}), ...patch };
+  try {
+    localStorage.setItem(HOST_OVERRIDE_KEY, JSON.stringify(all));
+  } catch {
+    /* noop */
+  }
+}
+
 export function loadApps() {
+  if (HOST) {
+    try {
+      const list = loadFromHost();
+      if (list.length) return list;
+    } catch {
+      /* 取得できなければ既定のアプリに戻す */
+    }
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_APPS.map(sanitize);
@@ -156,6 +211,13 @@ export function makeId(name, existing) {
  * カスタムスキーム（line:// など）を試し、開けなければ Web 版にフォールバックする。
  */
 export function openApp(app, onFallback) {
+  // Android アプリとして動いている時は、そのままアプリを起動する
+  if (HOST && app.pkg) {
+    if (HOST.launch(app.pkg)) return true;
+    if (onFallback) onFallback(app, true);
+    return false;
+  }
+
   const scheme = app.scheme;
   const web = app.web;
 
@@ -194,4 +256,28 @@ export function openApp(app, onFallback) {
     if (web) window.open(web, '_blank', 'noopener');
   }
   return true;
+}
+
+
+/**
+ * アイコン（data URL）を先に読み込んでおく。
+ * 読み込めたぶんだけ app._img に入れて、看板の絵に使う。
+ */
+export function preloadIcons(apps) {
+  const targets = apps.filter((a) => a.icon && !a._img);
+  if (targets.length === 0) return Promise.resolve(false);
+  return Promise.all(
+    targets.map(
+      (app) =>
+        new Promise((done) => {
+          const img = new Image();
+          img.onload = () => {
+            app._img = img;
+            done();
+          };
+          img.onerror = () => done();
+          img.src = app.icon;
+        })
+    )
+  ).then(() => true);
 }

@@ -7,7 +7,7 @@
  * standalone.html を出力する。リンクを1つ送るだけで動くようにするためのもの。
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,9 +56,20 @@ html = html
   .replace('<link rel="manifest" href="manifest.webmanifest" />', '')
   .replace('<link rel="apple-touch-icon" href="icons/icon-192.png" />', `<link rel="apple-touch-icon" href="${iconUrl}" />`)
   .replace('<link rel="icon" href="icons/icon-192.png" />', `<link rel="icon" href="${iconUrl}" />`)
-  .replace('<script type="module" src="src/main.js"></script>', `<script type="module">\n${jsSingle}\n</script>`);
+  // file:// では module スクリプトが使えないため、IIFE にまとめた通常スクリプトにする
+  .replace(
+    '<script type="module" src="src/main.js"></script>',
+    `<script>\n(function () {\n${jsSingle}\n})();\n</script>`
+  );
 
 writeFileSync(resolve(here, 'standalone.html'), html);
+
+// Android アプリ（WebView）の assets にも同じものを置く
+const assets = resolve(here, '../android/app/src/main/assets/launcher.html');
+if (existsSync(dirname(assets))) {
+  writeFileSync(assets, html);
+  console.log(`android assets: ${assets}`);
+}
 
 // 共有ページ用に、<html>/<head>/<body> を持たない本文だけの版も出せるようにする
 //   ARTIFACT_OUT=/path/to/page.html node build-standalone.mjs

@@ -1,5 +1,15 @@
 import { createRenderer } from './gl.js';
-import { DISTRICT_MAP, loadApps, saveApps, resetApps, makeId, openApp } from './apps.js';
+import {
+  DISTRICT_MAP,
+  HOST,
+  loadApps,
+  saveApps,
+  saveHostOverride,
+  resetApps,
+  makeId,
+  openApp,
+  preloadIcons,
+} from './apps.js';
 import { WORLD, buildWorld, buildRoom } from './world.js';
 import { createPlayer, updatePlayer, drawPlayer } from './player.js';
 import { createControls } from './controls.js';
@@ -42,11 +52,19 @@ const ui = createUI({
     rebuildWorld();
   },
   onUpdateApp: (id, draft) => {
-    apps = apps.map((a) => (a.id === id ? { ...a, ...draft } : a));
-    saveApps(apps);
+    if (HOST) {
+      // 端末のアプリは名前やアイコンを変えず、街区・色・高さだけ上書きする
+      const patch = { district: draft.district, color: draft.color, height: draft.height };
+      saveHostOverride(id, patch);
+      apps = apps.map((a) => (a.id === id ? { ...a, ...patch } : a));
+    } else {
+      apps = apps.map((a) => (a.id === id ? { ...a, ...draft } : a));
+      saveApps(apps);
+    }
     rebuildWorld();
   },
   onDeleteApp: (id) => {
+    if (HOST) return; // 端末のアプリは街から消さない
     apps = apps.filter((a) => a.id !== id);
     if (apps.length === 0) apps = resetApps();
     saveApps(apps);
@@ -577,7 +595,24 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-if ('serviceWorker' in navigator) {
+/* ------------------------------------------------- Android アプリとして動く時 */
+
+// 端末のアプリアイコンを読み込めたら街を作り直す
+preloadIcons(apps).then((changed) => {
+  if (changed) rebuildWorld();
+});
+
+// ホームボタン → 中央広場へ／戻るキー → 部屋を出る
+window.__onHomePressed = () => {
+  if (mode === 'room') exitRoom();
+  goHome();
+};
+window.__onBackPressed = () => {
+  if (mode === 'room') exitRoom();
+  else if (ui.isPanelOpen()) ui.closePanels();
+};
+
+if ('serviceWorker' in navigator && !HOST && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
